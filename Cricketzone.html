@@ -5,6 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>CricketZone</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+
+  <!-- Gainsight PX Tag -->
+  <script type="text/javascript">
+    (function(n,t,a,e,co){var i="aptrinsic";n[i]=n[i]||function(){
+        (n[i].q=n[i].q||[]).push(arguments)},n[i].p=e;n[i].c=co;
+      var r=t.createElement("script");r.async=!0,r.src=a+"?a="+e;
+      var c=t.getElementsByTagName("script")[0];c.parentNode.insertBefore(r,c)
+    })(window,document,"https://web-sdk.aptrinsic.com/api/aptrinsic.js","AP-QQBB3RKAD1ZA-2");
+  </script>
+  <!-- End Gainsight PX Tag -->
   <style>
     /* ═══════════════════════════════════════════════
        GLOBAL RESET & VARIABLES
@@ -1100,7 +1110,8 @@
 ═══════════════════════════════════════════════ -->
 <script>
 /* ─── GAINSIGHT PX TAG ─────────────────────────
-   TODO: Paste your PX snippet here
+   Tag injected in <head> (AP-QQBB3RKAD1ZA-2)
+   identify() called on login & signup below
    ──────────────────────────────────────────── */
 
 // ── App State ──────────────────────────────────
@@ -1147,10 +1158,30 @@ function handleLogin() {
 
   if (!ok) { trackEvent('login_validation_failed'); return; }
 
-  if (window.aptrinsic) {
-    aptrinsic('identify', { id: email, email }, { id: 'cricketzone-demo', name: 'CricketZone Demo' });
-  }
-  state.user = { email, name: email.split('@')[0] };
+  const loginName = email.split('@')[0];
+  state.user = { email, name: loginName };
+
+  // ── Gainsight PX: identify (Login) ────────────
+  aptrinsic('identify',
+    {
+      // User Fields
+      id:          email,               // Required — unique user ID
+      email:       email,
+      firstName:   loginName,
+      lastName:    '',
+      signUpDate:  Date.now(),          // unix ms — update if you store real signup date
+      plan:        'free',              // default plan on login; update as needed
+      role:        'fan',
+    },
+    {
+      // Account Fields
+      id:      'cricketzone-demo',      // Required
+      name:    'CricketZone Demo',
+      Program: 'Standard',
+    }
+  );
+  // ───────────────────────────────────────────────
+
   trackEvent('login_success', { email });
   goTo('welcome');
 }
@@ -1158,6 +1189,26 @@ function handleLogin() {
 function socialLogin(provider) {
   trackEvent('social_login_clicked', { provider });
   state.user = { email: 'demo@cricketzone.com', name: 'Demo User' };
+
+  // ── Gainsight PX: identify (Social Login) ─────
+  aptrinsic('identify',
+    {
+      id:         'demo@cricketzone.com',
+      email:      'demo@cricketzone.com',
+      firstName:  'Demo',
+      lastName:   'User',
+      signUpDate: Date.now(),
+      plan:       'free',
+      role:       'fan',
+    },
+    {
+      id:      'cricketzone-demo',
+      name:    'CricketZone Demo',
+      Program: 'Standard',
+    }
+  );
+  // ───────────────────────────────────────────────
+
   toast(`${provider} login successful! 🎉`);
   setTimeout(() => goTo('welcome'), 700);
 }
@@ -1183,14 +1234,32 @@ function handleSignup() {
   if (!ok) { trackEvent('signup_validation_failed'); return; }
 
   const name = fn + ' ' + ln;
-  if (window.aptrinsic) {
-    aptrinsic('identify',
-      { id: em, email: em, firstName: fn, lastName: ln, gender: state.gender },
-      { id: 'cricketzone-demo', name: 'CricketZone Demo' }
-    );
-  }
+  const signUpTimestamp = Date.now();
+
+  // ── Gainsight PX: identify (Signup) ───────────
+  aptrinsic('identify',
+    {
+      // User Fields
+      id:          em,                  // Required — unique user ID
+      email:       em,
+      firstName:   fn,
+      lastName:    ln,
+      signUpDate:  signUpTimestamp,     // unix ms — exact signup moment
+      plan:        'free',              // starting plan; update if you have tiers
+      gender:      state.gender,        // captured from gender selector
+      role:        state.role,          // Fan / Player / Coach / Analyst
+    },
+    {
+      // Account Fields
+      id:      'cricketzone-demo',      // Required
+      name:    'CricketZone Demo',
+      Program: 'Standard',
+    }
+  );
+  // ───────────────────────────────────────────────
+
   state.user = { email: em, name, gender: state.gender, role: state.role };
-  trackEvent('signup_completed', { name, email: em, gender: state.gender, role: state.role });
+  trackEvent('signup_completed', { name, email: em, gender: state.gender, role: state.role, signUpDate: signUpTimestamp });
   goTo('welcome');
 }
 
